@@ -94,7 +94,9 @@ while ($row = mysqli_fetch_assoc($result)) {
 
         </div>
     </div>
-
+<?php
+include "footer.php";
+?>
     <script>
         // Init feather icons
         feather.replace()

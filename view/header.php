@@ -86,7 +86,12 @@ $role = isset($_SESSION['role']) ? $_SESSION['role'] : null;
             <i data-feather="user"></i> <?php echo htmlspecialchars($_SESSION['username']); ?>
           </div>
           <div class="user-dropdown-menu" id="userDropdown">
-            <a href="../Tubes_Webpro_MOVR/buyer/profil.php">Informasi Akun</a>
+            <?php if ($role == 'seller'): ?>
+  <a href="seller/profile.php">Informasi Akun</a>
+<?php else: ?>
+  <a href="../Tubes_Webpro_MOVR/buyer/profil.php">Informasi Akun</a>
+<?php endif; ?>
+
             <?php if ($role == 'seller'): ?>
               <a href="seller/produk.php">Kontrol Produk</a>
             <?php endif; ?>
