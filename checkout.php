@@ -191,12 +191,38 @@ if ($is_new_order_request) {
         <script type="text/javascript">
             const currentPesananId = <?= $pesanan_id ?>;
 
-            document.getElementById('pay-button').onclick = function(){
-                snap.pay('<?= $snapToken ?>', {
+           document.getElementById('pay-button').onclick = function(){
+                snap.pay('<?= $snapToken ?>', { // Ini adalah perbaikan utamanya
                     onSuccess: function(result){
                         alert("Pembayaran berhasil!");
-                        // Arahkan kembali ke detail_checkout.php setelah sukses
-                        window.location.href = 'detail_checkout.php?pesanan_id=' + currentPesananId + '&status=success';
+                        // Kirim permintaan AJAX ke skrip PHP di sisi server untuk memperbarui status pesanan
+                        fetch('pages/update_pesanan_status.php', { // Memanggil skrip update_pesanan_status.php
+                            method: 'POST', // Menggunakan metode POST
+                            headers: {
+                                'Content-Type': 'application/json', // Mengatur header Content-Type
+                            },
+                            body: JSON.stringify({ // Mengirim data dalam format JSON
+                                pesanan_id: currentPesananId, // ID pesanan saat ini
+                                status: 'dibayar' // Mengatur status pesanan menjadi 'dibayar'
+                            })
+                        })
+                        .then(response => response.json()) // Menguraikan respons JSON
+                        .then(data => {
+                            if (data.success) { // Memeriksa apakah pembaruan status berhasil
+                                console.log('Status pesanan berhasil diperbarui.'); // Log pesan sukses
+                                // Setelah status diperbarui di database, baru arahkan pengguna
+                                window.location.href = 'detail_checkout.php?pesanan_id=' + currentPesananId + '&status=success'; // Mengarahkan ke halaman detail_checkout
+                            } else {
+                                console.error('Gagal memperbarui status pesanan:', data.message); // Log pesan error
+                                // Tetap arahkan pengguna meskipun ada error database, tapi catat errornya
+                                window.location.href = 'detail_checkout.php?pesanan_id=' + currentPesananId + '&status=success_but_db_error'; // Mengarahkan dengan status error
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error saat mengirim permintaan update status:', error); // Log error jaringan
+                            // Tetap arahkan pengguna meskipun ada error jaringan
+                            window.location.href = 'detail_checkout.php?pesanan_id=' + currentPesananId + '&status=success_network_error'; // Mengarahkan dengan status error jaringan
+                        });
                     },
                     onPending: function(result){
                         alert("Pembayaran tertunda!");

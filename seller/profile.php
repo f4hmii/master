@@ -130,8 +130,8 @@ $wallet_balance = "Rp0"; // Anda bisa menambah logika jika ada sistem wallet
   </p>
 
   <!-- Tambahan untuk Pesanan Perlu Dikirim -->
-  <a class="hover:text-gray-700" href="#" id="pesananPerluDikirim" onclick="toggleSidebar()">
-    Pesanan Perlu Dikirim
+  <a class="hover:text-gray-700" href="kelola_pesanan.php">
+    Kelola Pesanan
   </a>
 </div>
 
@@ -203,49 +203,102 @@ $wallet_balance = "Rp0"; // Anda bisa menambah logika jika ada sistem wallet
    </section>
   </main>
   <!-- Container untuk menampilkan daftar pesanan -->
-<div id="pesananContainer" class="bg-white p-4 rounded-md shadow hidden">
-  <h2 class="text-lg font-semibold mb-2">Daftar Pesanan Perlu Dikirim</h2>
-  <div id="pesananList" class="space-y-2 text-sm text-gray-700">
-    <!-- Daftar pesanan akan dimuat di sini via JavaScript -->
-  </div>
-</div>
+
 
   <?php
 include "../view/footer.php";
 ?>
 <script>
-function loadPesanan() {
-    // Tampilkan kontainer
-    document.getElementById("pesananContainer").classList.remove("hidden");
+    function loadPesanan() { // Mendefinisikan fungsi loadPesanan
+    const pesananContainer = document.getElementById("pesananContainer"); // Mengambil elemen kontainer pesanan
+    pesananContainer.classList.remove("hidden"); // Menampilkan kontainer
 
-    fetch('get_pesanan_perlu_dikirim.php')
-        .then(response => response.json())
+    fetch('get_pesanan_perlu_dikirim.php') // Mengambil data pesanan yang perlu dikirim
+        .then(response => response.json()) // Menguraikan respons JSON
         .then(data => {
-            const list = document.getElementById("pesananList");
-            list.innerHTML = '';
+            const list = document.getElementById("pesananList"); // Mengambil elemen daftar pesanan
+            list.innerHTML = ''; // Mengosongkan daftar pesanan
 
-            if (data.length === 0) {
-                list.innerHTML = '<p>Tidak ada pesanan saat ini.</p>';
+            if (data.length === 0) { // Memeriksa jika tidak ada pesanan
+                list.innerHTML = '<p>Tidak ada pesanan yang perlu dikirim.</p>'; // Menampilkan pesan kosong
                 return;
             }
 
-            data.forEach(pesanan => {
-                const item = document.createElement('div');
-                item.classList.add("border", "rounded", "p-2", "bg-gray-50");
+            data.forEach(pesanan => { // Melakukan iterasi pada setiap pesanan
+                let productListHtml = ''; // Menginisialisasi HTML daftar produk
+                pesanan.produk.forEach(p => { // Melakukan iterasi pada setiap produk dalam pesanan
+                    productListHtml += `
+                        <div class="flex items-center mt-2">
+                            <img src="../uploads/${p.foto_url}" alt="${p.nama_produk}" class="w-10 h-10 object-cover rounded mr-2" onerror="this.onerror=null; this.src='../uploads/image-not-found.png';">
+                            <p class="text-xs">
+                                <strong>${p.nama_produk}</strong> (${p.quantity}x) - Rp ${parseFloat(p.harga_produk).toLocaleString('id-ID')}
+                                <br>
+                                Warna: ${p.color}, Ukuran: ${p.size}
+                            </p>
+                        </div>
+                    `;
+                });
+
+                const item = document.createElement('div'); // Membuat elemen div untuk item pesanan
+                item.classList.add("border", "rounded", "p-3", "bg-gray-50", "mb-3", "shadow-sm"); // Menambahkan kelas CSS ke item pesanan
 
                 item.innerHTML = `
-                    <p><strong>ID:</strong> ${pesanan.pesanan_id}</p>
-                    <p><strong>Status:</strong> ${pesanan.status}</p>
-                    <p><strong>Tanggal:</strong> ${pesanan.tanggal_pesanan}</p>
+                    <p class="text-sm font-semibold">Pesanan ID: ${pesanan.pesanan_id}</p>
+                    <p class="text-xs text-gray-600">Status: <span class="font-medium">${pesanan.status.replace(/_/g, ' ').toUpperCase()}</span></p>
+                    <p class="text-xs text-gray-600">Tanggal Pesan: ${pesanan.tanggal_pesan}</p>
+                    <div class="mt-3">
+                        <h4 class="text-sm font-medium mb-1">Produk dalam Pesanan:</h4>
+                        ${productListHtml}
+                    </div>
+                    <button class="px-3 py-1 bg-blue-600 text-white rounded text-xs mt-3 hover:bg-blue-700" onclick="markAsShipped(${pesanan.pesanan_id})">Tandai Dikirim</button>
                 `;
-                list.appendChild(item);
+                list.appendChild(item); // Menambahkan item ke daftar pesanan
             });
         })
         .catch(err => {
-            console.error('Gagal mengambil data:', err);
+            console.error('Gagal mengambil data:', err); // Log error jika gagal mengambil data
+            list.innerHTML = '<p class="text-red-500">Gagal memuat pesanan. Coba lagi nanti.</p>'; // Menampilkan pesan error
         });
 }
-</script>
 
+// Fungsi baru untuk menandai pesanan sebagai dikirim
+function markAsShipped(pesananId) { // Mendefinisikan fungsi markAsShipped
+    if (confirm('Anda yakin ingin menandai pesanan ' + pesananId + ' sebagai DIKIRIM?')) { // Konfirmasi pengiriman pesanan
+        fetch('update_pesanan_status_seller.php', { // Memanggil skrip update_pesanan_status_seller.php
+            method: 'POST', // Menggunakan metode POST
+            headers: {
+                'Content-Type': 'application/json', // Mengatur header Content-Type
+            },
+            body: JSON.stringify({
+                pesanan_id: pesananId, // ID pesanan
+                status: 'dikirim' // Mengatur status pesanan menjadi 'dikirim'
+            })
+        })
+        .then(response => response.json()) // Menguraikan respons JSON
+        .then(data => {
+            if (data.success) { // Memeriksa apakah pembaruan status berhasil
+                alert('Pesanan ' + pesananId + ' berhasil ditandai sebagai dikirim.'); // Menampilkan pesan sukses
+                loadPesanan(); // Memuat ulang daftar pesanan
+            } else {
+                alert('Gagal menandai pesanan sebagai dikirim: ' + data.message); // Menampilkan pesan error
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error); // Log error
+            alert('Terjadi kesalahan jaringan.'); // Menampilkan pesan error jaringan
+        });
+    }
+}
+
+// Fungsi untuk toggle sidebar (jika diperlukan untuk menampilkan/menyembunyikan daftar pesanan)
+function toggleSidebar() { // Mendefinisikan fungsi toggleSidebar
+    const pesananContainer = document.getElementById("pesananContainer"); // Mengambil elemen kontainer pesanan
+    if (pesananContainer.classList.contains("hidden")) { // Memeriksa apakah kontainer pesanan tersembunyi
+        loadPesanan(); // Memuat pesanan jika tersembunyi
+    } else {
+        pesananContainer.classList.add("hidden"); // Menyembunyikan kontainer jika tidak tersembunyi
+    }
+}
+</script>
  </body>
 </html>
