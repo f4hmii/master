@@ -111,23 +111,30 @@ $wallet_balance = "Rp0"; // Anda bisa menambah logika jika ada sistem wallet
      </div>
     </div>
     <hr class="border-gray-300"/>
-    <div class="flex flex-col space-y-1 text-gray-500 text-sm">
-     <p class="font-semibold text-gray-700">
-      Akun Saya
-     </p>
-     <a class="hover:text-gray-700" href="#">
-      Profile
-     </a>
-     <a class="hover:text-gray-700" href="#">
-      Alamat
-     </a>
-     <a class="hover:text-gray-700" href="#">
-      Ubah Password
-     </a>
-     <p class="font-semibold text-gray-700 mt-3">
-      Notifikasi
-     </p>
-    </div>
+ <div class="flex flex-col space-y-1 text-gray-500 text-sm">
+  <p class="font-semibold text-gray-700">
+    Akun Saya
+  </p>
+  <a class="hover:text-gray-700" href="#">
+    Profile
+  </a>
+  <a class="hover:text-gray-700" href="#">
+    Alamat
+  </a>
+  <a class="hover:text-gray-700" href="#">
+    Ubah Password
+  </a>
+
+  <p class="font-semibold text-gray-700 mt-3">
+    Notifikasi
+  </p>
+
+  <!-- Tambahan untuk Pesanan Perlu Dikirim -->
+  <a class="hover:text-gray-700" href="#" id="pesananPerluDikirim" onclick="toggleSidebar()">
+    Pesanan Perlu Dikirim
+  </a>
+</div>
+
    </aside>
    <section class="flex-1 flex flex-col space-y-6">
     <div class="bg-gray-600 rounded-md p-6 flex justify-between text-center text-gray-900">
@@ -195,8 +202,50 @@ $wallet_balance = "Rp0"; // Anda bisa menambah logika jika ada sistem wallet
     </div>
    </section>
   </main>
+  <!-- Container untuk menampilkan daftar pesanan -->
+<div id="pesananContainer" class="bg-white p-4 rounded-md shadow hidden">
+  <h2 class="text-lg font-semibold mb-2">Daftar Pesanan Perlu Dikirim</h2>
+  <div id="pesananList" class="space-y-2 text-sm text-gray-700">
+    <!-- Daftar pesanan akan dimuat di sini via JavaScript -->
+  </div>
+</div>
+
   <?php
 include "../view/footer.php";
 ?>
+<script>
+function loadPesanan() {
+    // Tampilkan kontainer
+    document.getElementById("pesananContainer").classList.remove("hidden");
+
+    fetch('get_pesanan_perlu_dikirim.php')
+        .then(response => response.json())
+        .then(data => {
+            const list = document.getElementById("pesananList");
+            list.innerHTML = '';
+
+            if (data.length === 0) {
+                list.innerHTML = '<p>Tidak ada pesanan saat ini.</p>';
+                return;
+            }
+
+            data.forEach(pesanan => {
+                const item = document.createElement('div');
+                item.classList.add("border", "rounded", "p-2", "bg-gray-50");
+
+                item.innerHTML = `
+                    <p><strong>ID:</strong> ${pesanan.pesanan_id}</p>
+                    <p><strong>Status:</strong> ${pesanan.status}</p>
+                    <p><strong>Tanggal:</strong> ${pesanan.tanggal_pesanan}</p>
+                `;
+                list.appendChild(item);
+            });
+        })
+        .catch(err => {
+            console.error('Gagal mengambil data:', err);
+        });
+}
+</script>
+
  </body>
 </html>
